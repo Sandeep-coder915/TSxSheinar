@@ -12,10 +12,13 @@ export function useProducts() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await api.products.list();
       setProducts(res.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load products');
+      const msg = err instanceof Error ? err.message : 'Failed to load products';
+      setError(msg);
+      console.error('[useProducts] fetch failed:', msg);
     } finally {
       setLoading(false);
     }

@@ -1,14 +1,8 @@
 import type { Product, ApiResponse } from '@/types';
 
-// Dev: use Vite proxy path /api → proxy rewrites to localhost:5000
-// Prod: use full VITE_API_URL baked in at build time
-const BASE = import.meta.env.PROD
-  ? import.meta.env.VITE_API_URL
-  : '/api';
-
-if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
-  console.error('VITE_API_URL is not set! API calls will fail.');
-}
+// Dev: Vite proxy rewrites /api → localhost:5000
+// Prod: VITE_API_URL is baked in at build time by Vite from .env.production
+const BASE: string = import.meta.env.VITE_API_URL || '/api';
 
 async function request<T>(path: string, init?: RequestInit, timeoutMs = 30000): Promise<T> {
   const controller = new AbortController();

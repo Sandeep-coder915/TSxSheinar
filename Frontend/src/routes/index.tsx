@@ -214,13 +214,33 @@ function Atelier({ onBook }: { onBook: () => void }) {
 }
 
 function Showcase() {
-  const { products, loading } = useProducts();
+  const { products, loading, error } = useProducts();
 
   if (loading) {
     return (
       <section className="py-32 px-6 lg:px-12">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-sm opacity-60">Loading collection...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-32 px-6 lg:px-12">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-sm opacity-60">Unable to load collection. Please try again later.</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <section className="py-32 px-6 lg:px-12">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-sm opacity-60">No pieces available yet.</p>
         </div>
       </section>
     );
