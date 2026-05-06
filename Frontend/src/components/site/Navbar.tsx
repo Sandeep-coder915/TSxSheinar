@@ -43,7 +43,7 @@ export function Navbar() {
       <div className="max-w-[1500px] mx-auto px-6 lg:px-12 flex items-center justify-between">
           <Link
           to="/"
-          className="text-xl lg:text-2xl font-semibold text-primary tracking-wide w-30 h-10 "
+          className="text-xl lg:text-2xl font-semibold text-primary tracking-wide w-40 h-10 "
         >
           <img
             src="/logo (1).svg"

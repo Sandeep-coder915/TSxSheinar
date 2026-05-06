@@ -44,7 +44,7 @@ export function Footer() {
           <div>
             <h4 className="text-[11px] tracking-luxe uppercase mb-6" style={{ color: "var(--gold)" }}>Atelier</h4>
             <ul className="space-y-4 text-sm font-light opacity-80">
-              <li className="flex gap-3"><MapPin className="w-4 h-4 mt-0.5 shrink-0" /> The Sheinar Atelier, Lutyens, New Delhi</li>
+              <li className="flex gap-3"><MapPin className="w-4 h-4 mt-0.5 shrink-0" /> The Sheinar Atelier, Lutyens,Chandigarh</li>
               <li className="flex gap-3"><Phone className="w-4 h-4 mt-0.5 shrink-0" /> +91 98 1000 0000</li>
               <li className="flex gap-3"><Mail className="w-4 h-4 mt-0.5 shrink-0" /> atelier@houseofsheinar.com</li>
             </ul>

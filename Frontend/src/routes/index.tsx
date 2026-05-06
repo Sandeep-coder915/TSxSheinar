@@ -189,7 +189,18 @@ function Atelier({ onBook }: { onBook: () => void }) {
   return (
     <section className="relative py-32 overflow-hidden" style={{ background: "var(--maroon)", color: "var(--ivory)" }}>
       <div className="absolute inset-0 opacity-30">
-        <img src={atelierImg} alt="Atelier embroidery" className="w-full h-full object-cover" loading="lazy" width={1920} height={1080} />
+        {/* <img src={atelierImg} alt="Atelier embroidery" className="w-full h-full object-cover" loading="lazy" width={1920} height={1080} /> */}
+          <video
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster={atelierImg}
+        >
+          {/* swap src for a real video when available */}
+          <source src="/journal-hero.mp4" type="video/mp4" />
+        </video>
       </div>
       <div className="relative max-w-4xl mx-auto text-center px-6">
         <Reveal>
@@ -319,7 +330,7 @@ function Appointment({ onBook }: { onBook: () => void }) {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={onBook} className="btn-luxe">Book Appointment</button>
-            <a href="https://wa.me/919810000000" target="_blank" rel="noopener" className="btn-luxe">WhatsApp the Atelier</a>
+            <a href="https://wa.me/916239315288" target="_blank" rel="noopener" className="btn-luxe">WhatsApp the Atelier</a>
           </div>
         </Reveal>
       </div>

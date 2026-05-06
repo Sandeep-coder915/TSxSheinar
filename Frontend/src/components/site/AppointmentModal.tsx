@@ -148,7 +148,7 @@ export function AppointmentModal({ open, onClose, productName, productSlug }: Pr
                   </Field>
 
                   <Field label="Phone Number" required>
-                    <input required type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className="luxe-input" placeholder="+91 98100 00000" />
+                    <input required type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className="luxe-input" placeholder="+91 62393 15288" />
                   </Field>
 
                   <Field label="Occasion" required>
@@ -201,7 +201,7 @@ export function AppointmentModal({ open, onClose, productName, productSlug }: Pr
                     <div className="space-y-6">
                       <Location
                         name="Delhi Atelier"
-                        address="14, Prithviraj Road, Lutyens Delhi, New Delhi — 110011"
+                        address="14, Prithviraj Road, Lutyens Delhi,Chandigarh — 110011"
                         mapUrl="https://maps.google.com/?q=Prithviraj+Road+Lutyens+Delhi"
                         embedSrc="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3504.2!2d77.2090!3d28.5985!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjjCsDM1JzU0LjYiTiA3N8KwMTInMzIuNCJF!5e0!3m2!1sen!2sin!4v1"
                       />
@@ -215,7 +215,7 @@ export function AppointmentModal({ open, onClose, productName, productSlug }: Pr
 
                   <div className="border-t pt-6 space-y-3" style={{ borderColor: 'oklch(0.72 0.12 78 / 0.2)' }}>
                     <p className="text-[10px] tracking-luxe uppercase mb-3" style={{ color: 'var(--gold)' }}>Contact</p>
-                    <ContactRow icon={<Phone className="w-3.5 h-3.5" />} text="+91 98100 00000" />
+                    <ContactRow icon={<Phone className="w-3.5 h-3.5" />} text="+91 62393 15288" />
                     <ContactRow icon={<Mail className="w-3.5 h-3.5" />} text="atelier@sheinar.com" />
                     <ContactRow icon={<Clock className="w-3.5 h-3.5" />} text="Mon – Sat, 10 AM – 6 PM" />
                   </div>

@@ -161,7 +161,7 @@ function ProductPage() {
                     <Calendar className="w-4 h-4 flex-shrink-0" /> Book Appointment
                   </a>
                   <a
-                    href="https://wa.me/919810000000"
+                    href="https://wa.me/916239315288?text=Hello%20Sheinar%2C%20I%20would%20love%20to%20enquire%20about%20a%20custom%20piece."
                     target="_blank"
                     rel="noopener"
                     className="btn-luxe-dark flex items-center justify-center gap-2 text-xs md:text-sm"
