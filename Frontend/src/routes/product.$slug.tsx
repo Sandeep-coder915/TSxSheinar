@@ -121,7 +121,7 @@ function ProductPage() {
             <TabsContent value="description" className="pt-12">
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                  <h3 className="font-display text-3xl md:text-4xl mb-6">An ode to slow craft.</h3>
+                  {/* <h3 className="font-display text-3xl md:text-4xl mb-6">An ode to slow craft.</h3> */}
                   <span className="gold-line" />
                   <div className="mt-6 space-y-4">
                     {product.description.content.map((block, i) => (
@@ -133,9 +133,7 @@ function ProductPage() {
                     ))}
                   </div>
                 </div>
-                <div className="hover-zoom aspect-[4/5]">
-                  <img src={atelierImg} alt="Atelier" className="w-full h-full object-cover" loading="lazy" />
-                </div>
+             
               </div>
             </TabsContent>
 
