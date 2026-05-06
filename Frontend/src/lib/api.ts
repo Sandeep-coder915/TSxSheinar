@@ -1,8 +1,14 @@
 import type { Product, ApiResponse } from '@/types';
 
 // Dev: use Vite proxy path /api → proxy rewrites to localhost:5000
-// Prod: use full VITE_API_URL (e.g. https://sheinar-backend.onrender.com/api)
-const BASE = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_URL ?? '/api');
+// Prod: use full VITE_API_URL baked in at build time
+const BASE = import.meta.env.PROD
+  ? import.meta.env.VITE_API_URL
+  : '/api';
+
+if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
+  console.error('VITE_API_URL is not set! API calls will fail.');
+}
 
 async function request<T>(path: string, init?: RequestInit, timeoutMs = 30000): Promise<T> {
   const controller = new AbortController();
