@@ -65,7 +65,7 @@ export function Navbar() {
               onMouseLeave={() => setCollectionsOpen(false)}
             >
               <button className="flex items-center gap-1 hover:text-[color:var(--gold)] transition-colors">
-                Collections <ChevronDown className="w-3 h-3" />
+               COLLECTIONS  <ChevronDown className="w-3 h-3" />
               </button>
               <AnimatePresence>
                 {collectionsOpen && (
@@ -118,7 +118,7 @@ export function Navbar() {
               ))}
               {categories.length > 0 && (
                 <>
-                  <div className="text-[color:var(--gold)] mt-2 text-xs">Collections</div>
+                  <div className="text-[color:var(--gold)] mt-2 text-xs">COLLECTIONS</div>
                   {categories.map((cat) => (
                     <Link
                       key={cat}

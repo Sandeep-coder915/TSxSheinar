@@ -12,7 +12,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "The House of Sheinar — Heirloom Indian Couture" },
-      { name: "description", content: "Bespoke lehengas, sarees, sherwanis and couture gowns hand-crafted in our Delhi atelier." },
+      { name: "description", content: "Bespoke lehengas, sarees, sherwanis and couture gowns hand-crafted in our Chandigarh atelier." },
     ],
   }),
   component: Index,
@@ -138,7 +138,7 @@ function FounderNote() {
           <span className="gold-line" />
           <div className="mt-8 space-y-5 text-sm md:text-base font-light leading-relaxed opacity-85">
             <p>
-              Sheinar was born in a small room in old Delhi, with a roll of unbleached muslin and the murmur of a sewing machine my mother had carried across the partition. The first dupatta I designed took 11 months. It was not for sale.
+              Sheinar was born in a small room in  Chandigarh, with a roll of unbleached muslin and the murmur of a sewing machine my mother had carried across the partition. The first dupatta I designed took 11 months. It was not for sale.
             </p>
             <p>
               Today, our atelier is larger, our karigars are 64, and our brides come from every corner of the world. But the discipline remains the same: nothing leaves these walls until it has earned its place in someone's wardrobe — and someone's life.
@@ -213,7 +213,7 @@ function Atelier({ onBook }: { onBook: () => void }) {
         </Reveal>
         <Reveal delay={0.3}>
           <p className="mt-8 max-w-2xl mx-auto font-light text-base opacity-85 leading-relaxed">
-            Step into the Sheinar atelier in Lutyens Delhi — where master karigars work side-by-side under daylight, embroidering on adda frames passed down for generations.
+            Step into the Sheinar atelier in Lutyens Chandigarh — where master karigars work side-by-side under daylight, embroidering on adda frames passed down for generations.
           </p>
         </Reveal>
         <Reveal delay={0.45}>
@@ -326,7 +326,7 @@ function Appointment({ onBook }: { onBook: () => void }) {
           <p className="text-[10px] tracking-luxe uppercase mb-4" style={{ color: "var(--gold)" }}>By Appointment Only</p>
           <h2 className="font-display text-4xl md:text-6xl mb-6">A private audience<br /><em>with the atelier.</em></h2>
           <p className="font-light opacity-80 max-w-xl mx-auto mb-10">
-            Each piece begins with conversation. Reserve a one-on-one consultation with our design team in Delhi, Mumbai, or virtually — and let your story take form.
+            Each piece begins with conversation. Reserve a one-on-one consultation with our design team in Chandigarh, Mumbai, or virtually — and let your story take form.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={onBook} className="btn-luxe">Book Appointment</button>
