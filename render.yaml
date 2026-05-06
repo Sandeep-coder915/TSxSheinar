@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: sheinar-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false        # set in Render dashboard
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false        # set in Render dashboard
+      - key: CLOUDINARY_API_KEY
+        sync: false        # set in Render dashboard
+      - key: CLOUDINARY_API_SECRET
+        sync: false        # set in Render dashboard
+    autoDeploy: true
+
+  - type: web
+    name: sheinar-frontend
+    runtime: static
+    rootDir: Frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://sheinar-backend.onrender.com/api
+      - key: VITE_APP_ENV
+        value: production
+    autoDeploy: true

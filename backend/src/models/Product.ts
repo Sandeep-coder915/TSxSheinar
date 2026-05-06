@@ -132,7 +132,6 @@ const MetadataSchema = new Schema({
   dimensions: String,
   weight: String,
 }, { _id: false });
-
 const ManufacturersSchema = new Schema({
   name: String,
   origin: String,
@@ -219,8 +218,7 @@ const ProductSchema = new Schema<IProduct>(
   }
 );
 
-// Index for slug lookups
-ProductSchema.index({ slug: 1 });
+// Index for fast lookups (slug already has unique index via field definition)
 ProductSchema.index({ category: 1 });
 ProductSchema.index({ tags: 1 });
 ProductSchema.index({ createdAt: -1 });

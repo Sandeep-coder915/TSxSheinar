@@ -54,7 +54,7 @@ function Hero({ onBook }: { onBook: () => void }) {
           initial={{ opacity: 0, scaleX: 0 }}
           animate={{ opacity: 1, scaleX: 1 }}
           transition={{ duration: 1.4, delay: 0.9 }}
-          className="my-8 w-32 h-px"
+          className="my-8= w-32 h-px"
           style={{ background: "var(--gold)" }}
         />
         <motion.p
@@ -236,8 +236,8 @@ function Showcase() {
             <span className="gold-line mt-6" />
           </div>
         </Reveal>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {products.slice(0, 4).map((p, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {products.map((p, i) => (
             <Reveal key={p.slug} delay={i * 0.1}>
               <Link to="/product/$slug" params={{ slug: p.slug }} className="block group">
                 <div className="hover-zoom aspect-[3/4] mb-5 bg-muted">

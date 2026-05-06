@@ -3,11 +3,18 @@ dns.setDefaultResultOrder('ipv4first');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
 import productRoutes from './routes/productRoutes';
 import { errorHandler } from './middleware/errorHandler';
-import { connectDatabase } from './utils/db';
+import { connectDatabase, disconnectDatabase } from './utils/db';
 
-dotenv.config();
+// Load env file based on NODE_ENV: .env.development or .env.production
+// Falls back to .env if the specific file doesn't exist
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development';
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') }); // fallback
+
+console.log(`✓ Loaded env: ${envFile} (NODE_ENV=${process.env.NODE_ENV})`);
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -47,9 +54,29 @@ async function startServer() {
   try {
     await connectDatabase();
     console.log('✓ MongoDB connected successfully');
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`✓ Server running on port ${PORT}`);
     });
+
+    // Graceful shutdown
+    process.on('SIGINT', async () => {
+      console.log('\n🛑 Received SIGINT, shutting down gracefully...');
+      server.close(async () => {
+        await disconnectDatabase();
+        console.log('✅ Server closed');
+        process.exit(0);
+      });
+    });
+
+    process.on('SIGTERM', async () => {
+      console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
+      server.close(async () => {
+        await disconnectDatabase();
+        console.log('✅ Server closed');
+        process.exit(0);
+      });
+    });
+
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

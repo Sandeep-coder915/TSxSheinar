@@ -29,17 +29,19 @@ const router = express.Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB per file
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
     allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Invalid file type'));
   },
 });
 
+// Accept bannerImages, galleryImages, videos + any contentImage_* fields
 const uploadFields = upload.fields([
   { name: 'bannerImages', maxCount: 5 },
   { name: 'galleryImages', maxCount: 20 },
   { name: 'videos', maxCount: 3 },
+  ...Array.from({ length: 20 }, (_, i) => ({ name: `contentImage_${i}`, maxCount: 1 })),
 ]);
 
 // ── Static routes FIRST (before any /:slug) ──────────────────────────────────

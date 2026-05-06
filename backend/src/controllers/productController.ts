@@ -99,6 +99,7 @@ export async function createProduct(req: Request, res: Response) {
       bannerImages?: Express.Multer.File[];
       galleryImages?: Express.Multer.File[];
       videos?: Express.Multer.File[];
+      [key: string]: Express.Multer.File[] | undefined;
     };
 
     const images: any[] = [];
@@ -149,6 +150,17 @@ export async function createProduct(req: Request, res: Response) {
       }
     }
 
+    // Parse description and replace contentImage_* file references with uploaded URLs
+    let parsedDescription = description ? JSON.parse(description) : { content: [] };
+    for (let i = 0; i < parsedDescription.content.length; i++) {
+      const block = parsedDescription.content[i];
+      if (block.type === 'image' && files?.[`contentImage_${i}`]?.[0]) {
+        const file = files[`contentImage_${i}`]![0];
+        const uploaded: any = await uploadImage(file.buffer, `${slug}-content-${i}`);
+        parsedDescription.content[i].content = uploaded.secure_url;
+      }
+    }
+
     const product = new Product({
       name,
       slug,
@@ -157,7 +169,7 @@ export async function createProduct(req: Request, res: Response) {
       originalPrice: originalPrice ? parseFloat(originalPrice) : undefined,
       inStock: inStock !== undefined ? inStock === 'true' : true,
       featured: featured !== undefined ? featured === 'true' : false,
-      description: description ? JSON.parse(description) : { content: [] },
+      description: parsedDescription,
       metadata: metadata ? JSON.parse(metadata) : {},
       manufacturers: manufacturers ? JSON.parse(manufacturers) : {},
       seo: seo ? JSON.parse(seo) : {},
@@ -215,7 +227,6 @@ export async function updateProduct(req: Request, res: Response) {
     if (originalPrice !== undefined && originalPrice !== '') product.originalPrice = parseFloat(originalPrice);
     if (inStock !== undefined) product.inStock = inStock === 'true';
     if (featured !== undefined) product.featured = featured === 'true';
-    if (description) product.description = JSON.parse(description);
     if (metadata) product.metadata = JSON.parse(metadata);
     if (manufacturers) (product as any).manufacturers = JSON.parse(manufacturers);
     if (seo) product.seo = JSON.parse(seo);
@@ -225,7 +236,22 @@ export async function updateProduct(req: Request, res: Response) {
       bannerImages?: Express.Multer.File[];
       galleryImages?: Express.Multer.File[];
       videos?: Express.Multer.File[];
+      [key: string]: Express.Multer.File[] | undefined;
     };
+
+    // Handle content block image uploads
+    if (description) {
+      let parsedDescription = JSON.parse(description);
+      for (let i = 0; i < parsedDescription.content.length; i++) {
+        const block = parsedDescription.content[i];
+        if (block.type === 'image' && files?.[`contentImage_${i}`]?.[0]) {
+          const file = files[`contentImage_${i}`]![0];
+          const uploaded: any = await uploadImage(file.buffer, `${slug}-content-${i}`);
+          parsedDescription.content[i].content = uploaded.secure_url;
+        }
+      }
+      product.description = parsedDescription;
+    }
 
     // Handle new images
     if (files?.bannerImages || files?.galleryImages) {

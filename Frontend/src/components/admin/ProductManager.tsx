@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, Image as ImageIcon, Video, FileText, Upload, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Image as ImageIcon, Video, FileText, Upload, Loader2, ArrowUp, ArrowDown } from 'lucide-react';
 import { useProducts, Product } from '../../hooks/useProducts';
 import { toast } from 'sonner';
 
@@ -20,6 +20,16 @@ interface ContentBlock {
   order: number;
   alt?: string;
   caption?: string;
+  file?: File;
+  preview?: string;
+}
+
+interface ImageItem {
+  id: string;
+  file?: File;
+  url?: string;   // existing image URL (when editing)
+  preview: string;
+  order: number;
 }
 
 export function ProductManager() {
@@ -49,9 +59,10 @@ export function ProductManager() {
     seoKeywords: '',
   });
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([]);
-  const [bannerImages, setBannerImages] = useState<File[]>([]);
-  const [galleryImages, setGalleryImages] = useState<File[]>([]);
+  const [bannerImages, setBannerImages] = useState<ImageItem[]>([]);
+  const [galleryImages, setGalleryImages] = useState<ImageItem[]>([]);
   const [videos, setVideos] = useState<File[]>([]);
+  const [removedImageUrls, setRemovedImageUrls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
@@ -87,6 +98,7 @@ export function ProductManager() {
     setBannerImages([]);
     setGalleryImages([]);
     setVideos([]);
+    setRemovedImageUrls([]);
     setEditingProduct(null);
   };
 
@@ -136,15 +148,23 @@ export function ProductManager() {
       keywords: keywordsArray,
     }));
 
-    // Files
-    bannerImages.forEach((file, index) => {
-      productFormData.append('bannerImages', file);
-    });
-    galleryImages.forEach((file, index) => {
-      productFormData.append('galleryImages', file);
-    });
-    videos.forEach((file, index) => {
-      productFormData.append('videos', file);
+    // Files — only new uploads
+    bannerImages.filter(i => i.file).forEach(i => productFormData.append('bannerImages', i.file!));
+    galleryImages.filter(i => i.file).forEach(i => productFormData.append('galleryImages', i.file!));
+    videos.forEach(file => productFormData.append('videos', file));
+
+    // Existing image order (urls in desired order)
+    const bannerOrder = bannerImages.map(i => i.url || '').filter(Boolean);
+    const galleryOrder = galleryImages.map(i => i.url || '').filter(Boolean);
+    if (bannerOrder.length) productFormData.append('bannerImageOrder', JSON.stringify(bannerOrder));
+    if (galleryOrder.length) productFormData.append('galleryImageOrder', JSON.stringify(galleryOrder));
+    if (removedImageUrls.length) productFormData.append('removedImages', JSON.stringify(removedImageUrls));
+
+    // Content block files
+    contentBlocks.forEach((block, index) => {
+      if (block.type === 'image' && block.file) {
+        productFormData.append(`contentImage_${index}`, block.file);
+      }
     });
 
     setSubmitting(true);
@@ -205,8 +225,44 @@ export function ProductManager() {
       seoDescription: product.seo.description || '',
       seoKeywords: product.seo.keywords?.join(', ') || '',
     });
-    setContentBlocks(product.description.content);
+    setContentBlocks(product.description.content.map(b => ({ ...b, preview: undefined, file: undefined })));
+    // Populate existing images as ImageItems
+    const banners: ImageItem[] = (product.images || [])
+      .filter((img: any) => img.type === 'banner')
+      .map((img: any, i: number) => ({ id: `existing-banner-${i}`, url: img.url, preview: img.url, order: i }));
+    const gallery: ImageItem[] = (product.images || [])
+      .filter((img: any) => img.type === 'gallery')
+      .map((img: any, i: number) => ({ id: `existing-gallery-${i}`, url: img.url, preview: img.url, order: i }));
+    setBannerImages(banners);
+    setGalleryImages(gallery);
+    setRemovedImageUrls([]);
     setIsDialogOpen(true);
+  };
+
+  const addImagesToList = (files: File[], setter: React.Dispatch<React.SetStateAction<ImageItem[]>>) => {
+    setter(prev => [
+      ...prev,
+      ...files.map((file, i) => ({
+        id: `new-${Date.now()}-${i}`,
+        file,
+        preview: URL.createObjectURL(file),
+        order: prev.length + i,
+      })),
+    ]);
+  };
+
+  const moveImage = (list: ImageItem[], setter: React.Dispatch<React.SetStateAction<ImageItem[]>>, index: number, dir: -1 | 1) => {
+    const next = [...list];
+    const swap = index + dir;
+    if (swap < 0 || swap >= next.length) return;
+    [next[index], next[swap]] = [next[swap], next[index]];
+    setter(next.map((item, i) => ({ ...item, order: i })));
+  };
+
+  const removeImage = (list: ImageItem[], setter: React.Dispatch<React.SetStateAction<ImageItem[]>>, index: number) => {
+    const item = list[index];
+    if (item.url) setRemovedImageUrls(prev => [...prev, item.url!]);
+    setter(list.filter((_, i) => i !== index).map((item, i) => ({ ...item, order: i })));
   };
 
   const addContentBlock = (type: 'text' | 'image' | 'video') => {
@@ -344,16 +400,13 @@ export function ProductManager() {
                 <TabsContent value="content" className="space-y-4">
                   <div className="flex gap-2 mb-4">
                     <Button type="button" variant="outline" size="sm" onClick={() => addContentBlock('text')}>
-                      <FileText className="w-4 h-4 mr-2" />
-                      Add Text
+                      <FileText className="w-4 h-4 mr-2" />Add Text
                     </Button>
                     <Button type="button" variant="outline" size="sm" onClick={() => addContentBlock('image')}>
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Add Image
+                      <ImageIcon className="w-4 h-4 mr-2" />Add Image
                     </Button>
                     <Button type="button" variant="outline" size="sm" onClick={() => addContentBlock('video')}>
-                      <Video className="w-4 h-4 mr-2" />
-                      Add Video
+                      <Video className="w-4 h-4 mr-2" />Add Video
                     </Button>
                   </div>
                   <div className="space-y-4">
@@ -362,12 +415,7 @@ export function ProductManager() {
                         <CardHeader className="pb-3">
                           <div className="flex items-center justify-between">
                             <Badge variant="secondary">{block.type}</Badge>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeContentBlock(index)}
-                            >
+                            <Button type="button" variant="ghost" size="sm" onClick={() => removeContentBlock(index)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -382,11 +430,29 @@ export function ProductManager() {
                           )}
                           {block.type === 'image' && (
                             <>
-                              <Input
-                                placeholder="Image URL or upload path"
-                                value={block.content}
-                                onChange={(e) => updateContentBlock(index, { content: e.target.value })}
-                              />
+                              <div className="flex items-center gap-2">
+                                <input
+                                  id={`cb-img-${index}`}
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    updateContentBlock(index, { file, preview: URL.createObjectURL(file), content: file.name });
+                                  }}
+                                />
+                                <Button type="button" variant="outline" size="sm"
+                                  onClick={() => document.getElementById(`cb-img-${index}`)?.click()}>
+                                  <Upload className="w-4 h-4 mr-1" />Upload Image
+                                </Button>
+                                {block.preview && (
+                                  <img src={block.preview} alt="preview" className="h-12 w-12 object-cover rounded border" />
+                                )}
+                                {!block.preview && block.content && (
+                                  <span className="text-xs text-muted-foreground truncate max-w-[160px]">{block.content}</span>
+                                )}
+                              </div>
                               <Input
                                 placeholder="Alt text"
                                 value={block.alt || ''}
@@ -402,7 +468,7 @@ export function ProductManager() {
                           {block.type === 'video' && (
                             <>
                               <Input
-                                placeholder="Video URL or upload path"
+                                placeholder="Video URL"
                                 value={block.content}
                                 onChange={(e) => updateContentBlock(index, { content: e.target.value })}
                               />
@@ -419,84 +485,102 @@ export function ProductManager() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="media" className="space-y-4">
+                <TabsContent value="media" className="space-y-6">
+                  {/* Banner Images */}
                   <div>
-                    <Label>Banner Images (Max 5)</Label>
-                    <div className="mt-2">
-                      <input
-                        ref={bannerInputRef}
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => setBannerImages(Array.from(e.target.files || []))}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => bannerInputRef.current?.click()}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Banner Images
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>Banner Images (Max 5)</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={() => bannerInputRef.current?.click()}>
+                        <Upload className="w-4 h-4 mr-1" />Add
                       </Button>
-                      {bannerImages.length > 0 && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {bannerImages.length} file(s) selected
-                        </p>
-                      )}
                     </div>
+                    <input ref={bannerInputRef} type="file" multiple accept="image/*" className="hidden"
+                      onChange={(e) => addImagesToList(Array.from(e.target.files || []), setBannerImages)} />
+                    {bannerImages.length > 0 && (
+                      <div className="grid grid-cols-3 gap-3">
+                        {bannerImages.map((item, i) => (
+                          <div key={item.id} className="relative border rounded-lg overflow-hidden group">
+                            <img src={item.preview} alt={`banner-${i}`} className="w-full h-24 object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                              <Button type="button" size="sm" variant="secondary" className="h-7 w-7 p-0"
+                                onClick={() => moveImage(bannerImages, setBannerImages, i, -1)} disabled={i === 0}>
+                                <ArrowUp className="w-3 h-3" />
+                              </Button>
+                              <Button type="button" size="sm" variant="secondary" className="h-7 w-7 p-0"
+                                onClick={() => moveImage(bannerImages, setBannerImages, i, 1)} disabled={i === bannerImages.length - 1}>
+                                <ArrowDown className="w-3 h-3" />
+                              </Button>
+                              <Button type="button" size="sm" variant="destructive" className="h-7 w-7 p-0"
+                                onClick={() => removeImage(bannerImages, setBannerImages, i)}>
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            <span className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1 rounded">{i + 1}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Gallery Images */}
                   <div>
-                    <Label>Gallery Images (Max 20)</Label>
-                    <div className="mt-2">
-                      <input
-                        ref={galleryInputRef}
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => setGalleryImages(Array.from(e.target.files || []))}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => galleryInputRef.current?.click()}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Gallery Images
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>Gallery Images (Max 20)</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={() => galleryInputRef.current?.click()}>
+                        <Upload className="w-4 h-4 mr-1" />Add
                       </Button>
-                      {galleryImages.length > 0 && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {galleryImages.length} file(s) selected
-                        </p>
-                      )}
                     </div>
+                    <input ref={galleryInputRef} type="file" multiple accept="image/*" className="hidden"
+                      onChange={(e) => addImagesToList(Array.from(e.target.files || []), setGalleryImages)} />
+                    {galleryImages.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2">
+                        {galleryImages.map((item, i) => (
+                          <div key={item.id} className="relative border rounded-lg overflow-hidden group">
+                            <img src={item.preview} alt={`gallery-${i}`} className="w-full h-20 object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                              <Button type="button" size="sm" variant="secondary" className="h-6 w-6 p-0"
+                                onClick={() => moveImage(galleryImages, setGalleryImages, i, -1)} disabled={i === 0}>
+                                <ArrowUp className="w-3 h-3" />
+                              </Button>
+                              <Button type="button" size="sm" variant="secondary" className="h-6 w-6 p-0"
+                                onClick={() => moveImage(galleryImages, setGalleryImages, i, 1)} disabled={i === galleryImages.length - 1}>
+                                <ArrowDown className="w-3 h-3" />
+                              </Button>
+                              <Button type="button" size="sm" variant="destructive" className="h-6 w-6 p-0"
+                                onClick={() => removeImage(galleryImages, setGalleryImages, i)}>
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            <span className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1 rounded">{i + 1}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Videos */}
                   <div>
-                    <Label>Videos (Max 5)</Label>
-                    <div className="mt-2">
-                      <input
-                        ref={videoInputRef}
-                        type="file"
-                        multiple
-                        accept="video/*"
-                        onChange={(e) => setVideos(Array.from(e.target.files || []))}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => videoInputRef.current?.click()}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Videos
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>Videos (Max 5)</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={() => videoInputRef.current?.click()}>
+                        <Upload className="w-4 h-4 mr-1" />Add
                       </Button>
-                      {videos.length > 0 && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {videos.length} file(s) selected
-                        </p>
-                      )}
                     </div>
+                    <input ref={videoInputRef} type="file" multiple accept="video/*" className="hidden"
+                      onChange={(e) => setVideos(prev => [...prev, ...Array.from(e.target.files || [])])} />
+                    {videos.length > 0 && (
+                      <div className="space-y-1">
+                        {videos.map((v, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm border rounded px-3 py-1.5">
+                            <span className="truncate max-w-[260px]">{v.name}</span>
+                            <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0"
+                              onClick={() => setVideos(videos.filter((_, vi) => vi !== i))}>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
 

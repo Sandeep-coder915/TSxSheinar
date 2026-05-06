@@ -1,61 +1,8 @@
 import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import type { Product } from '@/types';
 
-export interface Product {
-  _id?: string;
-  name: string;
-  slug: string;
-  description: {
-    content: Array<{
-      type: 'text' | 'image' | 'video';
-      content: string;
-      order: number;
-      alt?: string;
-      caption?: string;
-    }>;
-  };
-  images: Array<{
-    url: string;
-    publicId: string;
-    alt: string;
-    type: 'banner' | 'gallery' | 'detail';
-    order: number;
-  }>;
-  videos?: Array<{
-    url: string;
-    publicId: string;
-    thumbnail?: string;
-    duration?: number;
-    order: number;
-  }>;
-  category: string;
-  price?: number;
-  originalPrice?: number;
-  inStock: boolean;
-  featured: boolean;
-  tags: string[];
-  metadata: {
-    material?: string;
-    care?: string;
-    dimensions?: string;
-    weight?: string;
-  };
-  manufacturers?: {
-    name?: string;
-    origin?: string;
-    artisan?: string;
-    workshop?: string;
-    craftTradition?: string;
-  };
-  seo: {
-    title?: string;
-    description?: string;
-    keywords?: string[];
-  };
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-const API_BASE = '/api';
+export type { Product };
 
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -65,80 +12,35 @@ export function useProducts() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/products`);
-      if (!response.ok) throw new Error('Failed to fetch products');
-      const data = await response.json();
-      setProducts(data.data || []);
+      const res = await api.products.list();
+      setProducts(res.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Failed to load products');
     } finally {
       setLoading(false);
     }
   };
 
-  const createProduct = async (productData: FormData) => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
-    try {
-      const response = await fetch(`${API_BASE}/products`, {
-        method: 'POST',
-        body: productData,
-        signal: controller.signal,
-      });
-      let data: any = {};
-      try { data = await response.json(); } catch {}
-      if (!response.ok) throw new Error(data.message || `Server error ${response.status}`);
-      setProducts(prev => [data.data, ...prev]);
-      return data.data;
-    } finally {
-      clearTimeout(timeout);
-    }
+  const createProduct = async (body: FormData) => {
+    const res = await api.products.create(body);
+    setProducts(prev => [res.data, ...prev]);
+    return res.data;
   };
 
-  const updateProduct = async (slug: string, productData: FormData) => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000);
-    try {
-      const response = await fetch(`${API_BASE}/products/${slug}`, {
-        method: 'PUT',
-        body: productData,
-        signal: controller.signal,
-      });
-      let data: any = {};
-      try { data = await response.json(); } catch {}
-      if (!response.ok) throw new Error(data.message || `Server error ${response.status}`);
-      setProducts(prev => prev.map(p => p.slug === slug ? data.data : p));
-      return data.data;
-    } finally {
-      clearTimeout(timeout);
-    }
+  const updateProduct = async (slug: string, body: FormData) => {
+    const res = await api.products.update(slug, body);
+    setProducts(prev => prev.map(p => p.slug === slug ? res.data : p));
+    return res.data;
   };
 
   const deleteProduct = async (slug: string) => {
-    try {
-      const response = await fetch(`${API_BASE}/products/${slug}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete product');
-      setProducts(prev => prev.filter(p => p.slug !== slug));
-    } catch (err) {
-      throw err;
-    }
+    await api.products.delete(slug);
+    setProducts(prev => prev.filter(p => p.slug !== slug));
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  useEffect(() => { fetchProducts(); }, []);
 
-  return {
-    products,
-    loading,
-    error,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    refetch: fetchProducts,
-  };
+  return { products, loading, error, createProduct, updateProduct, deleteProduct, refetch: fetchProducts };
 }
 
 export function useCategories() {
@@ -146,10 +48,9 @@ export function useCategories() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/products`)
-      .then(r => r.json())
-      .then(data => {
-        const unique = [...new Set<string>((data.data || []).map((p: Product) => p.category))];
+    api.products.list()
+      .then(res => {
+        const unique = [...new Set<string>((res.data || []).map(p => p.category))];
         setCategories(unique);
       })
       .catch(() => setCategories([]))
