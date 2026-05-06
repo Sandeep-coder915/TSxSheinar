@@ -1,10 +1,10 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Calendar } from "lucide-react";
+import { MessageCircle, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { Reveal } from "@/components/site/Reveal";
-import { useProducts, Product } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/useProducts";
+import { AppointmentModal } from "@/components/site/AppointmentModal";
 import atelierImg from "@/assets/atelier-hands.jpg";
 
 export const Route = createFileRoute("/product/$slug")({
@@ -15,12 +15,19 @@ function ProductPage() {
   const { slug } = Route.useParams();
   const { products, loading } = useProducts();
   const product = products.find((p) => p.slug === slug);
-  const [zoom, setZoom] = useState(false);
-  const [pos, setPos] = useState({ x: 50, y: 50 });
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [apptOpen, setApptOpen] = useState(false);
+  const touchStartX = useRef<number | null>(null);
 
-  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    setPos({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
+  const prev = () => setActiveIndex((i) => (i === 0 ? (product!.images.length - 1) : i - 1));
+  const next = () => setActiveIndex((i) => (i === product!.images.length - 1 ? 0 : i + 1));
+
+  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) diff > 0 ? next() : prev();
+    touchStartX.current = null;
   };
 
   if (loading) {
@@ -39,36 +46,74 @@ function ProductPage() {
   }
 
   const descriptionText = product.description.content.find(b => b.type === 'text')?.content || '';
-  const mainImage = product.images[0]?.url || '';
+  const images = product.images;
 
   return (
     <div className="pt-28 pb-20 embroidery-bg">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         <p className="text-[10px] tracking-luxe uppercase mb-8 opacity-70">
-          <Link to="/">Home</Link> &nbsp;/&nbsp; <Link to="/collections/$category" params={{ category: product.category }}>{product.category}</Link> &nbsp;/&nbsp; <span style={{ color: "var(--gold)" }}>{product.name}</span>
+          <Link to="/">Home</Link> &nbsp;/&nbsp;
+          <Link to="/collections/$category" params={{ category: product.category }}>{product.category}</Link>
+          &nbsp;/&nbsp; <span style={{ color: "var(--gold)" }}>{product.name}</span>
         </p>
 
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
           <Reveal y={20}>
+            {/* Main image with arrows */}
             <div
-              className="aspect-[4/5] overflow-hidden cursor-zoom-in bg-muted relative"
-              onMouseEnter={() => setZoom(true)}
-              onMouseLeave={() => setZoom(false)}
-              onMouseMove={handleMove}
+              className="aspect-[4/5] overflow-hidden bg-muted relative select-none"
+              onTouchStart={onTouchStart}
+              onTouchEnd={onTouchEnd}
             >
               <img
-                src={mainImage}
-                alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-500"
-                style={zoom ? { transform: `scale(2)`, transformOrigin: `${pos.x}% ${pos.y}%` } : undefined}
+                src={images[activeIndex]?.url || ''}
+                alt={images[activeIndex]?.alt || product.name}
+                className="w-full h-full object-cover transition-opacity duration-300"
                 width={1024}
                 height={1280}
               />
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={prev}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center bg-white/80 hover:bg-white transition-colors"
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={next}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center bg-white/80 hover:bg-white transition-colors"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {images.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveIndex(i)}
+                        className="w-1.5 h-1.5 rounded-full transition-colors"
+                        style={{ background: i === activeIndex ? 'var(--gold)' : 'rgba(255,255,255,0.6)' }}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-            {product.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-2 mt-2">
-                {product.images.slice(1).map((img, i) => (
-                  <img key={i} src={img.url} alt={img.alt} className="aspect-square object-cover" />
+
+            {/* Thumbnails */}
+            {images.length > 1 && (
+              <div className="grid grid-cols-5 gap-2 mt-2">
+                {images.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveIndex(i)}
+                    className="aspect-square overflow-hidden"
+                    style={{ outline: i === activeIndex ? '2px solid var(--gold)' : '2px solid transparent', outlineOffset: '2px' }}
+                  >
+                    <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
+                  </button>
                 ))}
               </div>
             )}
@@ -89,7 +134,7 @@ function ProductPage() {
                 <p className="font-display text-lg mb-1">A bespoke experience</p>
                 <p className="text-xs opacity-70 mb-5 font-light">All Sheinar pieces are made-to-measure. Reserve an audience with our atelier to begin.</p>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <a href="#" className="btn-luxe-dark flex items-center gap-2"><Calendar className="w-4 h-4" /> Book Appointment</a>
+                  <a href="#" className="btn-luxe-dark flex items-center gap-2" onClick={e => { e.preventDefault(); setApptOpen(true); }}><Calendar className="w-4 h-4" /> Book Appointment</a>
                   <a href="https://wa.me/919810000000" target="_blank" rel="noopener" className="btn-luxe-dark flex items-center gap-2"><MessageCircle className="w-4 h-4" /> WhatsApp Chat</a>
                 </div>
               </div>
@@ -106,8 +151,8 @@ function ProductPage() {
 
         <div className="mt-24">
           <Tabs defaultValue="description">
-            <TabsList className="bg-transparent border-b w-full justify-start gap-8 rounded-none h-auto pb-0" style={{ borderColor: "var(--gold)" }}>
-              {["description", "specifications", "shipping"].map((t) => (
+            <TabsList className="bg-transparent border-b w-full justify-start gap-8 rounded-none h-auto pb-0 flex-wrap" style={{ borderColor: "var(--gold)" }}>
+              {["description", "specifications", "manufacturers", "shipping"].map((t) => (
                 <TabsTrigger
                   key={t}
                   value={t}
@@ -121,7 +166,6 @@ function ProductPage() {
             <TabsContent value="description" className="pt-12">
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                  {/* <h3 className="font-display text-3xl md:text-4xl mb-6">An ode to slow craft.</h3> */}
                   <span className="gold-line" />
                   <div className="mt-6 space-y-4">
                     {product.description.content.map((block, i) => (
@@ -133,7 +177,9 @@ function ProductPage() {
                     ))}
                   </div>
                 </div>
-             
+                {/* <div className="aspect-[4/5]">
+                  <img src={atelierImg} alt="Atelier" className="w-full h-full object-cover" loading="lazy" />
+                </div> */}
               </div>
             </TabsContent>
 
@@ -150,6 +196,29 @@ function ProductPage() {
                     <span>{v}</span>
                   </div>
                 ))}
+                {!product.metadata?.material && !product.metadata?.care && !product.metadata?.dimensions && !product.metadata?.weight && (
+                  <p className="opacity-50 text-xs">No specifications available.</p>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="manufacturers" className="pt-12">
+              <div className="max-w-2xl space-y-4 text-sm font-light">
+                {[
+                  ["Manufacturer", (product as any).manufacturers?.name],
+                  ["Origin", (product as any).manufacturers?.origin],
+                  ["Artisan", (product as any).manufacturers?.artisan],
+                  ["Workshop", (product as any).manufacturers?.workshop],
+                  ["Craft Tradition", (product as any).manufacturers?.craftTradition],
+                ].filter(([, v]) => v).map(([k, v]) => (
+                  <div key={k} className="flex justify-between border-b py-3" style={{ borderColor: "var(--border)" }}>
+                    <span className="text-[11px] tracking-wide-luxe uppercase opacity-60">{k}</span>
+                    <span>{v}</span>
+                  </div>
+                ))}
+                {!(product as any).manufacturers?.name && (
+                  <p className="opacity-50 text-xs">No manufacturer information available.</p>
+                )}
               </div>
             </TabsContent>
 
@@ -169,8 +238,8 @@ function ProductPage() {
             {products.filter((p) => p.slug !== product.slug).slice(0, 4).map((p, i) => (
               <Reveal key={p.slug} delay={i * 0.08}>
                 <Link to="/product/$slug" params={{ slug: p.slug }} className="block group">
-                  <div className="hover-zoom aspect-[3/4] mb-4">
-                    <img src={p.images[0]?.url || ''} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                  <div className="aspect-[3/4] mb-4 overflow-hidden">
+                    <img src={p.images[0]?.url || ''} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   </div>
                   <h3 className="font-display text-lg">{p.name}</h3>
                   <p className="text-xs opacity-70">{p.price ? `₹ ${p.price.toLocaleString()}` : 'Price on request'}</p>
@@ -180,6 +249,12 @@ function ProductPage() {
           </div>
         </div>
       </div>
+      <AppointmentModal
+        open={apptOpen}
+        onClose={() => setApptOpen(false)}
+        productName={product.name}
+        productSlug={product.slug}
+      />
     </div>
   );
 }

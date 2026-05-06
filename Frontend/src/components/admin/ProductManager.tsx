@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, Image as ImageIcon, Video, FileText, Upload } from 'lucide-react';
+import { Plus, Edit, Trash2, Image as ImageIcon, Video, FileText, Upload, Loader2 } from 'lucide-react';
 import { useProducts, Product } from '../../hooks/useProducts';
 import { toast } from 'sonner';
 
@@ -39,6 +39,11 @@ export function ProductManager() {
     care: '',
     dimensions: '',
     weight: '',
+    manufacturerName: '',
+    manufacturerOrigin: '',
+    manufacturerArtisan: '',
+    manufacturerWorkshop: '',
+    manufacturerCraftTradition: '',
     seoTitle: '',
     seoDescription: '',
     seoKeywords: '',
@@ -47,6 +52,9 @@ export function ProductManager() {
   const [bannerImages, setBannerImages] = useState<File[]>([]);
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
   const [videos, setVideos] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('');
 
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +74,11 @@ export function ProductManager() {
       care: '',
       dimensions: '',
       weight: '',
+      manufacturerName: '',
+      manufacturerOrigin: '',
+      manufacturerArtisan: '',
+      manufacturerWorkshop: '',
+      manufacturerCraftTradition: '',
       seoTitle: '',
       seoDescription: '',
       seoKeywords: '',
@@ -102,6 +115,15 @@ export function ProductManager() {
       weight: formData.weight,
     }));
 
+    // Manufacturers
+    productFormData.append('manufacturers', JSON.stringify({
+      name: formData.manufacturerName,
+      origin: formData.manufacturerOrigin,
+      artisan: formData.manufacturerArtisan,
+      workshop: formData.manufacturerWorkshop,
+      craftTradition: formData.manufacturerCraftTradition,
+    }));
+
     // Tags
     const tagsArray = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
     productFormData.append('tags', JSON.stringify(tagsArray));
@@ -125,19 +147,37 @@ export function ProductManager() {
       productFormData.append('videos', file);
     });
 
+    setSubmitting(true);
+    setProgress(10);
+    setProgressLabel('Preparing data...');
     try {
+      setProgress(30);
+      setProgressLabel(bannerImages.length || galleryImages.length ? 'Uploading images...' : 'Saving product...');
       if (editingProduct) {
+        setProgress(60);
+        setProgressLabel('Updating product...');
         await updateProduct(editingProduct.slug, productFormData);
-        toast.success('Product updated successfully');
       } else {
+        setProgress(60);
+        setProgressLabel('Creating product...');
         await createProduct(productFormData);
-        toast.success('Product created successfully');
       }
-      setIsDialogOpen(false);
-      resetForm();
+      setProgress(100);
+      setProgressLabel('Done!');
+      toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
+      setTimeout(() => {
+        setIsDialogOpen(false);
+        resetForm();
+        setProgress(0);
+        setProgressLabel('');
+        setSubmitting(false);
+      }, 500);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to save product');
       console.error(error);
+      setProgress(0);
+      setProgressLabel('');
+      setSubmitting(false);
     }
   };
 
@@ -156,6 +196,11 @@ export function ProductManager() {
       care: product.metadata.care || '',
       dimensions: product.metadata.dimensions || '',
       weight: product.metadata.weight || '',
+      manufacturerName: (product as any).manufacturers?.name || '',
+      manufacturerOrigin: (product as any).manufacturers?.origin || '',
+      manufacturerArtisan: (product as any).manufacturers?.artisan || '',
+      manufacturerWorkshop: (product as any).manufacturers?.workshop || '',
+      manufacturerCraftTradition: (product as any).manufacturers?.craftTradition || '',
       seoTitle: product.seo.title || '',
       seoDescription: product.seo.description || '',
       seoKeywords: product.seo.keywords?.join(', ') || '',
@@ -206,10 +251,11 @@ export function ProductManager() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-6">
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="basic">Basic Info</TabsTrigger>
                   <TabsTrigger value="content">Content</TabsTrigger>
                   <TabsTrigger value="media">Media</TabsTrigger>
+                  <TabsTrigger value="specs">Specifications</TabsTrigger>
                   <TabsTrigger value="seo">SEO & Meta</TabsTrigger>
                 </TabsList>
 
@@ -454,76 +500,100 @@ export function ProductManager() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="seo" className="space-y-4">
-                  <div>
-                    <Label htmlFor="seoTitle">SEO Title</Label>
-                    <Input
-                      id="seoTitle"
-                      value={formData.seoTitle}
-                      onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="seoDescription">SEO Description</Label>
-                    <Textarea
-                      id="seoDescription"
-                      value={formData.seoDescription}
-                      onChange={(e) => setFormData({ ...formData, seoDescription: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="seoKeywords">SEO Keywords (comma separated)</Label>
-                    <Input
-                      id="seoKeywords"
-                      value={formData.seoKeywords}
-                      onChange={(e) => setFormData({ ...formData, seoKeywords: e.target.value })}
-                    />
-                  </div>
+                <TabsContent value="specs" className="space-y-4">
+                  <p className="text-sm font-medium text-muted-foreground">Specifications</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="material">Material</Label>
-                      <Input
-                        id="material"
-                        value={formData.material}
-                        onChange={(e) => setFormData({ ...formData, material: e.target.value })}
-                      />
+                      <Input id="material" value={formData.material} onChange={(e) => setFormData({ ...formData, material: e.target.value })} />
                     </div>
                     <div>
                       <Label htmlFor="care">Care Instructions</Label>
-                      <Input
-                        id="care"
-                        value={formData.care}
-                        onChange={(e) => setFormData({ ...formData, care: e.target.value })}
-                      />
+                      <Input id="care" value={formData.care} onChange={(e) => setFormData({ ...formData, care: e.target.value })} />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="dimensions">Dimensions</Label>
-                      <Input
-                        id="dimensions"
-                        value={formData.dimensions}
-                        onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
-                      />
+                      <Input id="dimensions" value={formData.dimensions} onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })} />
                     </div>
                     <div>
                       <Label htmlFor="weight">Weight</Label>
-                      <Input
-                        id="weight"
-                        value={formData.weight}
-                        onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                      />
+                      <Input id="weight" value={formData.weight} onChange={(e) => setFormData({ ...formData, weight: e.target.value })} />
                     </div>
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground pt-4">Manufacturers</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="manufacturerName">Manufacturer Name</Label>
+                      <Input id="manufacturerName" value={formData.manufacturerName} onChange={(e) => setFormData({ ...formData, manufacturerName: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="manufacturerOrigin">Origin</Label>
+                      <Input id="manufacturerOrigin" value={formData.manufacturerOrigin} onChange={(e) => setFormData({ ...formData, manufacturerOrigin: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="manufacturerArtisan">Artisan</Label>
+                      <Input id="manufacturerArtisan" value={formData.manufacturerArtisan} onChange={(e) => setFormData({ ...formData, manufacturerArtisan: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="manufacturerWorkshop">Workshop</Label>
+                      <Input id="manufacturerWorkshop" value={formData.manufacturerWorkshop} onChange={(e) => setFormData({ ...formData, manufacturerWorkshop: e.target.value })} />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="manufacturerCraftTradition">Craft Tradition</Label>
+                    <Input id="manufacturerCraftTradition" value={formData.manufacturerCraftTradition} onChange={(e) => setFormData({ ...formData, manufacturerCraftTradition: e.target.value })} />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="seo" className="space-y-4">
+                  <div>
+                    <Label htmlFor="seoTitle">SEO Title</Label>
+                    <Input id="seoTitle" value={formData.seoTitle} onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label htmlFor="seoDescription">SEO Description</Label>
+                    <Textarea id="seoDescription" value={formData.seoDescription} onChange={(e) => setFormData({ ...formData, seoDescription: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label htmlFor="seoKeywords">SEO Keywords (comma separated)</Label>
+                    <Input id="seoKeywords" value={formData.seoKeywords} onChange={(e) => setFormData({ ...formData, seoKeywords: e.target.value })} />
                   </div>
                 </TabsContent>
               </Tabs>
 
+              {/* Progress bar */}
+              {submitting && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{progressLabel}</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${progress}%`, background: 'var(--primary)' }}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={submitting}>
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editingProduct ? 'Update Product' : 'Create Product'}
+                <Button type="submit" disabled={submitting} className="min-w-[160px]">
+                  {submitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {editingProduct ? 'Updating...' : 'Creating...'}
+                    </span>
+                  ) : (
+                    editingProduct ? 'Update Product' : 'Create Product'
+                  )}
                 </Button>
               </div>
             </form>

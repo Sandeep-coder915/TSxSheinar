@@ -27,67 +27,51 @@ import {
 
 const router = express.Router();
 
-// Configure multer for memory storage
-const storage = multer.memoryStorage();
 const upload = multer({
-  storage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-      'image/gif',
-      'video/mp4',
-      'video/webm',
-    ];
-
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type'));
-    }
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB per file
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'];
+    allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Invalid file type'));
   },
 });
 
-// Product Routes
+const uploadFields = upload.fields([
+  { name: 'bannerImages', maxCount: 5 },
+  { name: 'galleryImages', maxCount: 20 },
+  { name: 'videos', maxCount: 3 },
+]);
+
+// ── Static routes FIRST (before any /:slug) ──────────────────────────────────
+
+// Product statics
 router.get('/', getAllProducts);
 router.get('/featured', getFeaturedProducts);
 router.get('/category/:category', getProductsByCategory);
-router.get('/:slug', getProductBySlug);
-router.post(
-  '/',
-  upload.fields([
-    { name: 'bannerImages', maxCount: 1 },
-    { name: 'galleryImages', maxCount: 5 },
-    { name: 'videos', maxCount: 3 },
-  ]),
-  createProduct
-);
-router.put(
-  '/:slug',
-  upload.fields([
-    { name: 'bannerImages', maxCount: 1 },
-    { name: 'galleryImages', maxCount: 5 },
-    { name: 'videos', maxCount: 3 },
-  ]),
-  updateProduct
-);
-router.delete('/:slug', deleteProduct);
+router.post('/', uploadFields, createProduct);
 
-// Review Routes
-router.get('/:slug/reviews', getProductReviews);
-router.post('/:slug/reviews', createReview);
+// Review statics
 router.put('/reviews/:reviewId', updateReview);
 router.delete('/reviews/:reviewId', deleteReview);
 router.patch('/reviews/:reviewId/verify', markReviewAsVerified);
 
-// Appointment Routes
+// Appointment statics
 router.get('/appointments/list', getAppointments);
-router.get('/:slug/appointments', getProductAppointments);
-router.post('/:slug/appointments', createAppointment);
+router.post('/appointments/general', createAppointment);
 router.put('/appointments/:appointmentId', updateAppointment);
 router.patch('/appointments/:appointmentId/status', updateAppointmentStatus);
 router.delete('/appointments/:appointmentId', deleteAppointment);
+
+// ── Dynamic /:slug routes AFTER ──────────────────────────────────────────────
+
+router.get('/:slug', getProductBySlug);
+router.put('/:slug', uploadFields, updateProduct);
+router.delete('/:slug', deleteProduct);
+
+router.get('/:slug/reviews', getProductReviews);
+router.post('/:slug/reviews', createReview);
+
+router.get('/:slug/appointments', getProductAppointments);
+router.post('/:slug/appointments', createAppointment);
 
 export default router;

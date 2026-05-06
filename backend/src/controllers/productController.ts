@@ -73,6 +73,7 @@ export async function createProduct(req: Request, res: Response) {
       featured,
       description,
       metadata,
+      manufacturers,
       seo,
       tags,
     } = req.body;
@@ -158,6 +159,7 @@ export async function createProduct(req: Request, res: Response) {
       featured: featured !== undefined ? featured === 'true' : false,
       description: description ? JSON.parse(description) : { content: [] },
       metadata: metadata ? JSON.parse(metadata) : {},
+      manufacturers: manufacturers ? JSON.parse(manufacturers) : {},
       seo: seo ? JSON.parse(seo) : {},
       tags: tags ? JSON.parse(tags).filter((t: string) => t.trim() !== '') : [],
       images,
@@ -193,6 +195,7 @@ export async function updateProduct(req: Request, res: Response) {
       featured,
       description,
       metadata,
+      manufacturers,
       seo,
       tags,
     } = req.body;
@@ -214,6 +217,7 @@ export async function updateProduct(req: Request, res: Response) {
     if (featured !== undefined) product.featured = featured === 'true';
     if (description) product.description = JSON.parse(description);
     if (metadata) product.metadata = JSON.parse(metadata);
+    if (manufacturers) (product as any).manufacturers = JSON.parse(manufacturers);
     if (seo) product.seo = JSON.parse(seo);
     if (tags) product.tags = JSON.parse(tags);
 

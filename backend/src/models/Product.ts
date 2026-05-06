@@ -31,6 +31,14 @@ interface ProductMetadata {
   weight?: string;
 }
 
+interface ProductManufacturers {
+  name?: string;
+  origin?: string;
+  artisan?: string;
+  workshop?: string;
+  craftTradition?: string;
+}
+
 interface ProductSEO {
   title?: string;
   description?: string;
@@ -52,6 +60,7 @@ export interface IProduct extends Document {
   featured: boolean;
   tags: string[];
   metadata: ProductMetadata;
+  manufacturers?: ProductManufacturers;
   seo: ProductSEO;
   reviews: mongoose.Types.ObjectId[];
   createdAt: Date;
@@ -124,6 +133,14 @@ const MetadataSchema = new Schema({
   weight: String,
 }, { _id: false });
 
+const ManufacturersSchema = new Schema({
+  name: String,
+  origin: String,
+  artisan: String,
+  workshop: String,
+  craftTradition: String,
+}, { _id: false });
+
 const SEOSchema = new Schema({
   title: String,
   description: String,
@@ -181,6 +198,10 @@ const ProductSchema = new Schema<IProduct>(
     },
     metadata: {
       type: MetadataSchema,
+      default: {},
+    },
+    manufacturers: {
+      type: ManufacturersSchema,
       default: {},
     },
     seo: {

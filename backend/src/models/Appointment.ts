@@ -1,11 +1,14 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IAppointment extends Document {
-  productId: mongoose.Types.ObjectId;
+  productId?: mongoose.Types.ObjectId;
+  productName?: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
+  occasion: string;
+  preferredLocation: string;
   date: Date;
   time: string;
   message?: string;
@@ -19,9 +22,10 @@ const AppointmentSchema = new Schema<IAppointment>(
     productId: {
       type: Schema.Types.ObjectId,
       ref: 'Product',
-      required: [true, 'Product ID is required'],
+      required: false,
       index: true,
     },
+    productName: { type: String, trim: true },
     firstName: {
       type: String,
       required: [true, 'First name is required'],
@@ -51,6 +55,16 @@ const AppointmentSchema = new Schema<IAppointment>(
     time: {
       type: String,
       required: [true, 'Appointment time is required'],
+    },
+    occasion: {
+      type: String,
+      required: [true, 'Occasion is required'],
+      trim: true,
+    },
+    preferredLocation: {
+      type: String,
+      required: [true, 'Preferred location is required'],
+      trim: true,
     },
     message: {
       type: String,

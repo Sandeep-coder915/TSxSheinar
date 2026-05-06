@@ -39,6 +39,13 @@ export interface Product {
     dimensions?: string;
     weight?: string;
   };
+  manufacturers?: {
+    name?: string;
+    origin?: string;
+    artisan?: string;
+    workshop?: string;
+    craftTradition?: string;
+  };
   seo: {
     title?: string;
     description?: string;
@@ -49,7 +56,6 @@ export interface Product {
 }
 
 const API_BASE = '/api';
-const API_DIRECT = 'http://localhost:5000/api';
 
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -71,27 +77,41 @@ export function useProducts() {
   };
 
   const createProduct = async (productData: FormData) => {
-    const response = await fetch(`${API_DIRECT}/products`, {
-      method: 'POST',
-      body: productData,
-    });
-    let data: any = {};
-    try { data = await response.json(); } catch {}
-    if (!response.ok) throw new Error(data.message || `Server error ${response.status}`);
-    setProducts(prev => [data.data, ...prev]);
-    return data.data;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+    try {
+      const response = await fetch(`${API_BASE}/products`, {
+        method: 'POST',
+        body: productData,
+        signal: controller.signal,
+      });
+      let data: any = {};
+      try { data = await response.json(); } catch {}
+      if (!response.ok) throw new Error(data.message || `Server error ${response.status}`);
+      setProducts(prev => [data.data, ...prev]);
+      return data.data;
+    } finally {
+      clearTimeout(timeout);
+    }
   };
 
   const updateProduct = async (slug: string, productData: FormData) => {
-    const response = await fetch(`${API_DIRECT}/products/${slug}`, {
-      method: 'PUT',
-      body: productData,
-    });
-    let data: any = {};
-    try { data = await response.json(); } catch {}
-    if (!response.ok) throw new Error(data.message || `Server error ${response.status}`);
-    setProducts(prev => prev.map(p => p.slug === slug ? data.data : p));
-    return data.data;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000);
+    try {
+      const response = await fetch(`${API_BASE}/products/${slug}`, {
+        method: 'PUT',
+        body: productData,
+        signal: controller.signal,
+      });
+      let data: any = {};
+      try { data = await response.json(); } catch {}
+      if (!response.ok) throw new Error(data.message || `Server error ${response.status}`);
+      setProducts(prev => prev.map(p => p.slug === slug ? data.data : p));
+      return data.data;
+    } finally {
+      clearTimeout(timeout);
+    }
   };
 
   const deleteProduct = async (slug: string) => {

@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Reveal } from "@/components/site/Reveal";
 import { useProducts } from "@/hooks/useProducts";
+import { AppointmentModal } from "@/components/site/AppointmentModal";
 import heroImg from "@/assets/hero-couture.jpg";
 import founderImg from "@/assets/founder.jpg";
 import atelierImg from "@/assets/atelier-hands.jpg";
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-function Hero() {
+function Hero({ onBook }: { onBook: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], [0, 200]);
@@ -71,7 +72,7 @@ function Hero() {
           transition={{ duration: 1.4, delay: 1.4 }}
           className="flex flex-col sm:flex-row gap-4"
         >
-          <a href="#appointment" className="btn-luxe">Book Appointment</a>
+          <a href="#appointment" className="btn-luxe" onClick={e => { e.preventDefault(); onBook(); }}>Book Appointment</a>
           <Link to="/collections/couture" className="btn-luxe">Explore Collections</Link>
         </motion.div>
       </motion.div>
@@ -184,7 +185,7 @@ function Vision() {
   );
 }
 
-function Atelier() {
+function Atelier({ onBook }: { onBook: () => void }) {
   return (
     <section className="relative py-32 overflow-hidden" style={{ background: "var(--maroon)", color: "var(--ivory)" }}>
       <div className="absolute inset-0 opacity-30">
@@ -205,7 +206,7 @@ function Atelier() {
           </p>
         </Reveal>
         <Reveal delay={0.45}>
-          <a href="#appointment" className="mt-10 btn-luxe inline-block">Visit the Atelier</a>
+          <button onClick={onBook} className="mt-10 btn-luxe inline-block">Visit the Atelier</button>
         </Reveal>
       </div>
     </section>
@@ -286,7 +287,7 @@ function Testimonials() {
   );
 }
 
-function Appointment() {
+function Appointment({ onBook }: { onBook: () => void }) {
   return (
     <section id="appointment" className="py-32 px-6 lg:px-12" style={{ background: "var(--noir)", color: "var(--ivory)" }}>
       <div className="max-w-3xl mx-auto text-center">
@@ -297,7 +298,7 @@ function Appointment() {
             Each piece begins with conversation. Reserve a one-on-one consultation with our design team in Delhi, Mumbai, or virtually — and let your story take form.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="https://wa.me/919810000000" target="_blank" rel="noopener" className="btn-luxe">Book Appointment</a>
+            <button onClick={onBook} className="btn-luxe">Book Appointment</button>
             <a href="https://wa.me/919810000000" target="_blank" rel="noopener" className="btn-luxe">WhatsApp the Atelier</a>
           </div>
         </Reveal>
@@ -307,16 +308,18 @@ function Appointment() {
 }
 
 function Index() {
+  const [apptOpen, setApptOpen] = useState(false);
   return (
     <>
-      <Hero />
+      <Hero onBook={() => setApptOpen(true)} />
       <Artistry />
       <FounderNote />
       <Vision />
-      <Atelier />
+      <Atelier onBook={() => setApptOpen(true)} />
       <Showcase />
       <Testimonials />
-      <Appointment />
+      <Appointment onBook={() => setApptOpen(true)} />
+      <AppointmentModal open={apptOpen} onClose={() => setApptOpen(false)} />
     </>
   );
 }

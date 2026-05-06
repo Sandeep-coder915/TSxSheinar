@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,6 +16,9 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [collectionsOpen, setCollectionsOpen] = useState(false);
   const { categories } = useCategories();
+  const { location } = useRouterState();
+
+  const isHome = location.pathname === "/";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
@@ -23,19 +26,30 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // On home: transparent until scrolled. On all other pages: always solid dark.
+  const solid = !isHome || scrolled;
+
   return (
     <header
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-700 ${
-        scrolled ? "bg-noir/95 backdrop-blur-md py-3" : "bg-transparent py-6"
-      }`}
-      style={{ color: "var(--ivory)" }}
+      className="fixed top-0 inset-x-0 z-50 transition-all duration-500"
+      style={{
+        background: solid ? "var(--noir)" : "transparent",
+        backdropFilter: solid ? "blur(12px)" : "none",
+        padding: solid ? "12px 0" : "24px 0",
+        color: "var(--ivory)",
+        borderBottom: solid ? "1px solid oklch(0.72 0.12 78 / 0.15)" : "none",
+      }}
     >
       <div className="max-w-[1500px] mx-auto px-6 lg:px-12 flex items-center justify-between">
-        <Link to="/" className="flex flex-col items-start leading-none">
-          <span className="font-display text-2xl md:text-[28px]" style={{ color: "var(--gold)" }}>
-            Sheinar
-          </span>
-          <span className="text-[9px] tracking-luxe mt-1 opacity-80">THE HOUSE OF</span>
+          <Link
+          to="/"
+          className="text-xl lg:text-2xl font-semibold text-primary tracking-wide w-50 h-10 "
+        >
+          <img
+            src="/logo (1).svg"
+            alt="Sheinar"
+          
+          />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-8 text-[11px] tracking-wide-luxe uppercase">
@@ -95,7 +109,8 @@ export function Navbar() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="lg:hidden bg-noir/98 overflow-hidden"
+            className="lg:hidden overflow-hidden"
+            style={{ background: "var(--noir)" }}
           >
             <div className="px-6 py-6 flex flex-col gap-4 text-sm tracking-wide-luxe uppercase">
               {navLinks.map((l) => (

@@ -63,45 +63,32 @@ export async function getProductAppointments(req: Request, res: Response) {
 export async function createAppointment(req: Request, res: Response) {
   try {
     const { slug } = req.params;
-    const { firstName, lastName, email, phone, date, time, message } = req.body;
+    const { firstName, lastName, email, phone, date, time, message, occasion, preferredLocation } = req.body;
 
-    // Validate required fields
-    if (!firstName || !lastName || !email || !phone || !date || !time) {
-      return res.status(400).json({
-        success: false,
-        message: 'All required fields must be provided',
-      });
+    if (!firstName || !lastName || !email || !phone || !date || !time || !occasion || !preferredLocation) {
+      return res.status(400).json({ success: false, message: 'All required fields must be provided' });
     }
 
-    const product = await Product.findOne({ slug });
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found',
-      });
-    }
+    let productId = undefined;
+    let productName = undefined;
 
-    // Check if appointment slot is available
-    const existingAppointment = await Appointment.findOne({
-      productId: product._id,
-      date: new Date(date),
-      time,
-      status: { $ne: 'cancelled' },
-    });
-
-    if (existingAppointment) {
-      return res.status(400).json({
-        success: false,
-        message: 'This time slot is not available',
-      });
+    if (slug && slug !== 'general') {
+      const product = await Product.findOne({ slug });
+      if (product) {
+        productId = product._id;
+        productName = product.name;
+      }
     }
 
     const appointment = new Appointment({
-      productId: product._id,
+      productId,
+      productName,
       firstName,
       lastName,
       email,
       phone,
+      occasion,
+      preferredLocation,
       date: new Date(date),
       time,
       message: message || '',
@@ -110,16 +97,9 @@ export async function createAppointment(req: Request, res: Response) {
 
     await appointment.save();
 
-    res.status(201).json({
-      success: true,
-      message: 'Appointment booked successfully',
-      data: appointment,
-    });
+    res.status(201).json({ success: true, message: 'Appointment booked successfully', data: appointment });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'Error creating appointment',
-    });
+    res.status(500).json({ success: false, message: error instanceof Error ? error.message : 'Error creating appointment' });
   }
 }
 
