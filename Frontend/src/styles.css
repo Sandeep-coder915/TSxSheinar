@@ -115,7 +115,6 @@
   .hover-zoom { overflow: hidden; }
   .hover-zoom img { transition: transform 1.2s cubic-bezier(.2,.8,.2,1); }
   .hover-zoom:hover img { transform: scale(1.06); }
-
   .btn-luxe {
     @apply inline-flex items-center justify-center px-8 py-3 text-xs uppercase border transition-all duration-500;
     letter-spacing: 0.35em;
