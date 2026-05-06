@@ -9,7 +9,6 @@
 - Appointment booking system
 - Image/video compression
 - Mobile-responsive design
-
 ### Tech Stack
 - **Frontend**: React 19, TypeScript, TanStack Router, Tailwind CSS, Shadcn UI
 - **Backend**: Node.js, Express, TypeScript, MongoDB, Mongoose, Cloudinary
